@@ -23,16 +23,18 @@ const eTexture = loader.load(EARTH_TEXTURE_PATH, (tex) => {
   ETEXT_RES.y = tex.image.height
 })
 
+const ATM_RADIUS = ERADIUS * 1.2
+
 const MOON_ORBIT_STEP = 0.0003
 const MOON_TEXT_PATH = "./assets/moon/moon-4k.png"
 
 const CAM_ROTATE_SPEED = -0.0025
-const CAM_ZOOM_MULT = 0.01
-const CAM_MIN_RADIUS = ERADIUS * 1.8
-const CAM_MAX_RADIUS = ERADIUS * 15
+const FOV_FACTOR_IN = 1.02
+const FOV_FACTOR_OUT = 0.98
 
 let handleMouseInput = false
 let camRadius = ERADIUS * 4.5
+let zoom = 1.0
 const canvas = document.querySelector("canvas.webgl")
 const vAngles = {theta: 0, phi: 0}
 const scene = new THREE.Scene()
@@ -43,6 +45,53 @@ scene.background = new THREE.Color(0x0)
 /* Set up renderer */
 const renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true})
 renderer.setSize(window.innerWidth, window.innerHeight)
+
+/* Set up camera */
+const aspect = window.innerWidth / window.innerHeight
+const camera = new THREE.PerspectiveCamera(45, aspect, 1, 1000)
+let camPos = FromAngles(0, 0, camRadius)
+camera.position.set(camPos.x, camPos.y, camPos.z)
+camera.lookAt(0,0,0)
+camera.zoom = 1.5
+
+/* Set lights */
+const ambientLight = new THREE.AmbientLight(0xffffffff, 0.01)
+scene.add(ambientLight)
+
+const dirLight = new THREE.DirectionalLight(0xffffffff, 1.5)
+dirLight.position.set(400,150,0)
+scene.add(dirLight)
+
+/* Stars */
+const starMaterial = new THREE.PointsMaterial({
+  color: 0xffffff
+})
+const starGeometry = new THREE.BufferGeometry()
+
+const starPoints = []
+for (let i = 0; i < 10000; i++) {
+  let x = (Math.random() - 0.5) * 2000
+  let y = (Math.random() - 0.5) * 2000
+  let z = (Math.random() - 0.5) * 2000
+  if ((new THREE.Vector3(x,y,z)).length() <= 200) continue
+  starPoints.push(x, y, z)
+}
+
+starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPoints, 3))
+const stars = new THREE.Points(starGeometry, starMaterial)
+scene.add(stars)
+
+/* Sun */
+const sunGeo = new THREE.SphereGeometry(50, 16, 16)
+const sunMat = new THREE.ShaderMaterial({
+  fragmentShader: await LoadFileContents("./assets/sunFS.glsl"),
+  vertexShader: await LoadFileContents("./assets/sunVS.glsl"),
+  transparent: true,
+})
+const sun = new THREE.Mesh(sunGeo, sunMat)
+sun.position.set(-40, 0, 0)
+// scene.add(sun)
+
 
 /* Set up Earth */
 const eNormal = loader.load(EARTH_NORMAL_PATH, ReRender)
@@ -64,6 +113,21 @@ const earthGeo = new THREE.SphereGeometry(ERADIUS, 128, 128)
 const earthMesh = new THREE.Mesh(earthGeo, earthMat)
 earthMesh.position.set(0,0,0)
 scene.add(earthMesh)
+
+/* Atmosphere */
+const atmFS = await LoadFileContents("./assets/atm_FS.glsl")
+const atmVS = await LoadFileContents("./assets/atm_VS.glsl")
+const atmGeo = new THREE.SphereGeometry(ATM_RADIUS, 64, 64)
+const atmMat = new THREE.ShaderMaterial({
+  fragmentShader: atmFS,
+  vertexShader: atmVS,
+  uniforms: {
+    "eradius": { value: ERADIUS }
+  },
+  transparent: true
+})
+const atmosphere = new THREE.Mesh(atmGeo, atmMat)
+scene.add(atmosphere)
 
 /* Moon */
 let moonDistance = 5
@@ -104,20 +168,7 @@ function onWindowResize() {
     ReRender()
 }
 
-/* Set lights */
-const ambientLight = new THREE.AmbientLight(0xffffffff, 0.1)
-scene.add(ambientLight)
 
-const dirLight = new THREE.DirectionalLight(0xffffffff, 1.5)
-dirLight.position.set(400,10,0)
-scene.add(dirLight)
-
-/* Set up camera */
-const aspect = window.innerWidth / window.innerHeight
-const camera = new THREE.PerspectiveCamera(45, aspect, 1, 100)
-let camPos = FromAngles(0, 0, camRadius)
-camera.position.set(camPos.x, camPos.y, camPos.z)
-camera.lookAt(0,0,0)
 
 /* Interaction & Map */
 const axes = new THREE.AxesHelper(5)
@@ -204,9 +255,19 @@ $(canvas).on("scroll mousewheel DOMMouseScroll", e => {
 
 /* View handling */
 function Zoom(scrollDelta) {
-  camRadius += scrollDelta * CAM_ZOOM_MULT
-  camRadius = Clamp(camRadius, CAM_MAX_RADIUS, CAM_MIN_RADIUS)
-  UpdateCameraPosition()
+  // zoom += scrollDelta * ZOOM_CHANGE_SPEED
+  // zoom = Clamp(zoom, MIN_ZOOM, MAX_ZOOM)
+  // camera.zoom = zoom
+  // console.log(camera.zoom)
+  if (scrollDelta > 0) {
+    camera.fov *= FOV_FACTOR_IN
+  }
+  else camera.fov *= FOV_FACTOR_OUT
+  camera.fov = Clamp(camera.fov, 100, 20)
+  camera.updateProjectionMatrix()
+  // camRadius += scrollDelta * CAM_ZOOM_MULT
+  // camRadius = Clamp(camRadius, CAM_MAX_RADIUS, CAM_MIN_RADIUS)
+  // UpdateCameraPosition()
 }
 
 function UpdateCameraPosition() {
