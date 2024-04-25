@@ -34,7 +34,6 @@ const FOV_FACTOR_OUT = 0.98
 
 let handleMouseInput = false
 let camRadius = ERADIUS * 4.5
-let zoom = 1.0
 const canvas = document.querySelector("canvas.webgl")
 const vAngles = {theta: 0, phi: 0}
 const scene = new THREE.Scene()
@@ -48,11 +47,11 @@ renderer.setSize(window.innerWidth, window.innerHeight)
 
 /* Set up camera */
 const aspect = window.innerWidth / window.innerHeight
-const camera = new THREE.PerspectiveCamera(45, aspect, 1, 1000)
+const camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000)
 let camPos = FromAngles(0, 0, camRadius)
 camera.position.set(camPos.x, camPos.y, camPos.z)
 camera.lookAt(0,0,0)
-camera.zoom = 1.5
+camera.zoom = 1.0
 
 /* Set lights */
 const ambientLight = new THREE.AmbientLight(0xffffffff, 0.01)
@@ -82,15 +81,16 @@ const stars = new THREE.Points(starGeometry, starMaterial)
 scene.add(stars)
 
 /* Sun */
-const sunGeo = new THREE.SphereGeometry(50, 16, 16)
+const sunGeo = new THREE.SphereGeometry(500, 16, 16)
 const sunMat = new THREE.ShaderMaterial({
   fragmentShader: await LoadFileContents("./assets/sunFS.glsl"),
   vertexShader: await LoadFileContents("./assets/sunVS.glsl"),
   transparent: true,
 })
 const sun = new THREE.Mesh(sunGeo, sunMat)
-sun.position.set(-40, 0, 0)
-// scene.add(sun)
+sun.position.set(dirLight.position)
+sun.position.y += 20
+scene.add(sun)
 
 
 /* Set up Earth */
@@ -98,11 +98,14 @@ const eNormal = loader.load(EARTH_NORMAL_PATH, ReRender)
 const eHeightMap = loader.load(EARTH_HEIGHTMAP_PATH, ReRender)
 const eSpecularMap = loader.load(EARTH_SPECMAP_PATH, ReRender)
 
+// const eShaderMat = new THREE.ShaderMaterial({
+
+// })
 const earthMat = new THREE.MeshPhongMaterial({ 
   map: eTexture,
   // normalMap: eNormal,
   displacementMap: eHeightMap,
-  displacementScale: .03,
+  displacementScale: .005,
   specular: 0xb0b0b0,
   specularMap: eSpecularMap,
   color: 0xffffffff,
@@ -114,6 +117,48 @@ const earthMesh = new THREE.Mesh(earthGeo, earthMat)
 earthMesh.position.set(0,0,0)
 scene.add(earthMesh)
 
+/* Cities */
+async function ParseCityData() {
+  let fileDat = await LoadFileContents("./assets/earth/cities/worldcities.csv")
+  const rows = fileDat.split(/\n/)
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r].replaceAll('"', "").split(/,/)
+    rows[r] = {
+      "name": row[0], 
+      "theta": (parseFloat(row[3]) + 180) * (Math.PI / 180), 
+      "phi": parseFloat(row[2]) + 90 * (Math.PI / 180)
+    }
+  }
+  rows.shift()
+  return rows
+}
+
+const cities = await ParseCityData()
+// const cities = LoadCities()
+
+// function LoadCities() {
+//   for (let i = 0; i < cities.length; i++) {
+//     const city = cities[i]
+//     const 
+//   }
+// }
+
+/* Clouds */
+function RotateClouds() {
+  clouds.rotateOnAxis(new THREE.Vector3(0, 1, 0), 0.00002)
+}
+
+const clText = await loader.loadAsync("./assets/earth/fair_clouds_8k.jpg")
+const clGeo = new THREE.SphereGeometry(ERADIUS + 0.002, 64, 64)
+const clMat = new THREE.MeshPhongMaterial({
+  map: clText,
+  alphaMap: clText,
+  transparent: true
+})
+const clouds = new THREE.Mesh(clGeo, clMat)
+clouds.position.set(0,0,0)
+scene.add(clouds)
+
 /* Atmosphere */
 const atmFS = await LoadFileContents("./assets/atm_FS.glsl")
 const atmVS = await LoadFileContents("./assets/atm_VS.glsl")
@@ -122,7 +167,8 @@ const atmMat = new THREE.ShaderMaterial({
   fragmentShader: atmFS,
   vertexShader: atmVS,
   uniforms: {
-    "eradius": { value: ERADIUS }
+    "eradius": { value: ERADIUS },
+    "sunPos": {value: dirLight.position }
   },
   transparent: true
 })
@@ -177,7 +223,8 @@ axes.setColors(0xfcba03, 0x29b50d, 0x091bde)
 // scene.add(axes)
 
 const borderData = JSON.parse(await LoadFileContents("./assets/earth/borderdat.json")).countries
-
+const countries = CreateCountries()
+console.log(countries)
 function CheckPoint(x, y) {
   for (let i = 0; i < borderData.length; i++) {
     let n = borderData[i].name
@@ -201,6 +248,54 @@ function CheckPoint(x, y) {
     }
   }
   return ""
+}
+
+/**
+ * @returns array of objects with properties `name`, `isMultiPolygon`, and `border`
+ */
+function CreateCountries() {
+  const borderOffset = 0.005
+  const _countries = []
+  for (let i = 0; i < borderData.length; i++) {
+    if (!borderData[i].isMultiPolygon) {
+      const points = []
+      for (let j = 0; j < borderData[i].borderPoints.length; j++) {
+        points.push(
+          FromAngles(-(0.5 + borderData[i].borderPoints[j][0]) * Math.PI * 2.0, 
+            -(0.5 - borderData[i].borderPoints[j][1]) * Math.PI, 
+            ERADIUS + borderOffset))
+      }
+      const border = CreateLine(points, 0xffffff)
+      _countries.push({
+        name: borderData[i].name,
+        isMultiPolygon: borderData[i].isMultiPolygon,
+        border: border
+      })
+    }
+    else {
+      const borders = []
+      for (let j = 0; j < borderData[i].borderPoints.length; j++) {
+        for (let k = 0; k < borderData[i].borderPoints[j].length; k++) {
+          const normPoints = borderData[i].borderPoints[j][k]
+          const points = []
+          for (let l = 0; l < normPoints.length; l++) {
+            points.push(FromAngles(
+              -(0.5 + normPoints[l][0]) * Math.PI * 2.0,
+              -(0.5 - normPoints[l][1]) * Math.PI,
+              ERADIUS + borderOffset))
+          }
+          const border = CreateLine(points, 0xffffff)
+          borders.push(border)
+        }
+      }
+      _countries.push({
+        name: borderData[i].name,
+        isMultiPolygon: borderData[i].isMultiPolygon,
+        border: borders,
+      })
+    }
+  }
+  return _countries
 }
 
 const raycaster = new THREE.Raycaster();
@@ -352,7 +447,13 @@ function ReRender() {
 }
 
 /* Loop */
+// const atmVerts = atmosphere.geometry.attributes.position
 function Loop() {
+  // for (let i = 0; i < atmosphere.geometry.attributes.position; i += 3000) {
+  //   const pos = new THREE.Vector3(atmVerts[i], atmVerts[i+1], atmVerts[i+2])
+  //   // console.log(pos, pos.normalize().dot(dirLight.position.normalize()))
+  // }
+  RotateClouds()
   UpdateMoonPosition()
 }
 
