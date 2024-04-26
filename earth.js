@@ -112,7 +112,7 @@ const earthMat = new THREE.MeshPhongMaterial({
   flatShading: false,
   // wireframe: true
 })
-const earthGeo = new THREE.SphereGeometry(ERADIUS, 128, 128)
+const earthGeo = new THREE.SphereGeometry(ERADIUS, 100, 100) // change to evenly distributed sphere
 const earthMesh = new THREE.Mesh(earthGeo, earthMat)
 earthMesh.position.set(0,0,0)
 scene.add(earthMesh)
@@ -149,7 +149,7 @@ function RotateClouds() {
 }
 
 const clText = await loader.loadAsync("./assets/earth/fair_clouds_8k.jpg")
-const clGeo = new THREE.SphereGeometry(ERADIUS + 0.002, 64, 64)
+const clGeo = new THREE.SphereGeometry(ERADIUS + 0.005, 32, 32)
 const clMat = new THREE.MeshPhongMaterial({
   map: clText,
   alphaMap: clText,
@@ -162,7 +162,7 @@ scene.add(clouds)
 /* Atmosphere */
 const atmFS = await LoadFileContents("./assets/atm_FS.glsl")
 const atmVS = await LoadFileContents("./assets/atm_VS.glsl")
-const atmGeo = new THREE.SphereGeometry(ATM_RADIUS, 64, 64)
+const atmGeo = new THREE.SphereGeometry(ATM_RADIUS, 32, 32)
 const atmMat = new THREE.ShaderMaterial({
   fragmentShader: atmFS,
   vertexShader: atmVS,
@@ -182,7 +182,7 @@ let moonAngles = {
   phi: 0.2
 }
 
-const moonGeo = new THREE.SphereGeometry(0.2, 32, 32)
+const moonGeo = new THREE.SphereGeometry(0.2, 16, 16)
 const moonText = loader.load(MOON_TEXT_PATH, ReRender)
 
 const moonMat = new THREE.MeshPhongMaterial({
@@ -224,7 +224,7 @@ axes.setColors(0xfcba03, 0x29b50d, 0x091bde)
 
 const borderData = JSON.parse(await LoadFileContents("./assets/earth/borderdat.json")).countries
 const countries = CreateCountries()
-console.log(countries)
+
 function CheckPoint(x, y) {
   for (let i = 0; i < borderData.length; i++) {
     let n = borderData[i].name
@@ -254,7 +254,7 @@ function CheckPoint(x, y) {
  * @returns array of objects with properties `name`, `isMultiPolygon`, and `border`
  */
 function CreateCountries() {
-  const borderOffset = 0.005
+  const borderOffset = 0.007
   const _countries = []
   for (let i = 0; i < borderData.length; i++) {
     if (!borderData[i].isMultiPolygon) {
@@ -307,7 +307,8 @@ function HandleMouseClick(event) {
   const inters = raycaster.intersectObjects(scene.children)
   for (let i = 0; i < inters.length; i++) {
     // is point on earth?
-    if (inters[i].point.length() > ERADIUS + 0.01 || inters[i].object.type != "Mesh") {
+    // console.log(inters[i].object)
+    if (inters[i].object != earthMesh) {
       continue;
     }
     let cname = CheckPoint(inters[i].uv.x, inters[i].uv.y)
