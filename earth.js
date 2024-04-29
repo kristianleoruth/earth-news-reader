@@ -343,7 +343,7 @@ function HandleMouseClick(event) {
 
     console.log(`Country chosen: ${cname}`)
   }
-}
+} 
 
 const newsContainer = $('.news-container')
 
