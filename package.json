@@ -1,7 +1,9 @@
 {
   "dependencies": {
     "dat.gui": "^0.7.9",
+    "express": "^4.19.2",
     "jquery": "^3.7.1",
+    "newsapi": "^2.4.1",
     "robust-point-in-polygon": "^1.0.3",
     "three": "^0.163.0",
     "vite": "^5.2.9"

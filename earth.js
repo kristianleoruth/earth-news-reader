@@ -24,6 +24,7 @@ const eTexture = loader.load(EARTH_TEXTURE_PATH, (tex) => {
 })
 
 const ATM_RADIUS = ERADIUS * 1.2
+const ATM2_RADIUS = ERADIUS * 1.05
 
 const MOON_ORBIT_STEP = 0.0003
 const MOON_TEXT_PATH = "./assets/moon/moon-4k.png"
@@ -112,7 +113,7 @@ const earthMat = new THREE.MeshPhongMaterial({
   flatShading: false,
   // wireframe: true
 })
-const earthGeo = new THREE.SphereGeometry(ERADIUS, 100, 100) // change to evenly distributed sphere
+const earthGeo = new THREE.SphereGeometry(ERADIUS, 64, 64) // change to evenly distributed sphere
 const earthMesh = new THREE.Mesh(earthGeo, earthMat)
 earthMesh.position.set(0,0,0)
 scene.add(earthMesh)
@@ -145,7 +146,7 @@ const cities = await ParseCityData()
 
 /* Clouds */
 function RotateClouds() {
-  clouds.rotateOnAxis(new THREE.Vector3(0, 1, 0), 0.00002)
+  clouds.rotateOnAxis(new THREE.Vector3(0, 1, 0), 0.00005)
 }
 
 const clText = await loader.loadAsync("./assets/earth/fair_clouds_8k.jpg")
@@ -174,6 +175,21 @@ const atmMat = new THREE.ShaderMaterial({
 })
 const atmosphere = new THREE.Mesh(atmGeo, atmMat)
 scene.add(atmosphere)
+
+const atm2FS = await LoadFileContents("./assets/atm2_FS.glsl")
+const atm2VS = await LoadFileContents("./assets/atm2_VS.glsl")
+const atm2Geo = new THREE.SphereGeometry(ATM2_RADIUS, 32, 32)
+const atm2Mat = new THREE.ShaderMaterial({
+  fragmentShader: atm2FS,
+  vertexShader: atm2VS,
+  uniforms: {
+    "radius": {"value": ATM2_RADIUS}
+  },
+  transparent: true,
+})
+const atm2 = new THREE.Mesh(atm2Geo, atm2Mat)
+atm2.position.set(0,0,0)
+scene.add(atm2)
 
 /* Moon */
 let moonDistance = 5
@@ -255,6 +271,7 @@ function CheckPoint(x, y) {
  */
 function CreateCountries() {
   const borderOffset = 0.007
+  const borderColor = 0xffffff
   const _countries = []
   for (let i = 0; i < borderData.length; i++) {
     if (!borderData[i].isMultiPolygon) {
@@ -265,7 +282,7 @@ function CreateCountries() {
             -(0.5 - borderData[i].borderPoints[j][1]) * Math.PI, 
             ERADIUS + borderOffset))
       }
-      const border = CreateLine(points, 0xffffff)
+      const border = CreateLine(points, borderColor)
       _countries.push({
         name: borderData[i].name,
         isMultiPolygon: borderData[i].isMultiPolygon,
@@ -284,7 +301,7 @@ function CreateCountries() {
               -(0.5 - normPoints[l][1]) * Math.PI,
               ERADIUS + borderOffset))
           }
-          const border = CreateLine(points, 0xffffff)
+          const border = CreateLine(points, borderColor)
           borders.push(border)
         }
       }
@@ -313,16 +330,52 @@ function HandleMouseClick(event) {
     }
     let cname = CheckPoint(inters[i].uv.x, inters[i].uv.y)
 
-    if (cname != "") {
-      ShowNews(cname)
+    if (cname == "") {
+      return
     }
+
+    fetch('http://127.0.0.1:3000/' + cname, {
+      method: 'get',
+      url: 'http://127.0.0.1:3000/' + cname,
+    }).then(res => {
+      return res.text()
+    }).then(text => {ShowNews(cname, JSON.parse(text))})
 
     console.log(`Country chosen: ${cname}`)
   }
 }
 
-function ShowNews(countryName) {
+const newsContainer = $('.news-container')
 
+function ShowNews(countryName, newsAPIData) {
+  newsContainer.attr("style", "visibility: visible")
+  newsContainer.find("h1").text(`News from ${countryName}`)
+
+  const table = document.querySelector('table.news-table')
+  table.innerHTML = ""
+
+  for (let i = 0; i < newsAPIData.articles.length; i++) {
+    let article = newsAPIData.articles[i]
+    if (article.publishedAt.startsWith('1970')) continue
+    const row = document.createElement("tr")
+    const headline = document.createElement("td")
+    headline.setAttribute("class", "article-headline")
+    const articleUrl = document.createElement("td")
+    articleUrl.setAttribute("class", "article-url")
+    
+    const articleElem = document.createElement("a")
+    articleElem.setAttribute("href", article.url)
+    articleElem.setAttribute("target", "_blank")
+    articleElem.textContent = 'Read more'
+    articleUrl.appendChild(articleElem)
+
+    headline.textContent = article.title
+
+    row.appendChild(headline)
+    row.appendChild(articleUrl)
+
+    table.appendChild(row)
+  }
 }
 
 function GetPixelFromUV(v) {

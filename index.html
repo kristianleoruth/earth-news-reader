@@ -1,11 +1,22 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <style>
+      :root {
+        font-family: Inter, sans-serif;
+        font-feature-settings: 'liga' 1, 'calt' 1; /* fix for Chrome */
+      }
+      @supports (font-variation-settings: normal) {
+        :root { font-family: InterVariable, sans-serif; }
+      }
+
       body {
         padding: 0px;
         margin: 0px;
         overflow: hidden;
+        height: 100%;
       }
 
       .webgl {
@@ -13,11 +24,58 @@
         position: absolute;
         left: 0;
         top: 0;
+        z-index: -1000;
+      }
+
+      .news-container {
+        background-color: whitesmoke;
+        max-width: 40%;
+        min-width: 20%;
+        height: 90%;
+        max-height: 90%;
+        margin-top: 5%;
+        margin-left: 5%;
+        padding: 2% 5%;
+        z-index: 10000;
+        border-radius: 13px;
+        /* color: white; */
+      }
+
+      .news-container * {
+        overflow: scroll;
+      }
+
+      .news-table {
+        width: 100%;
+      }
+
+      .article-url {
+        text-align: right;
+      }
+
+      #close-container:hover {
+        cursor: pointer
       }
     </style>
   </head>
   <body>
-    <!-- < -->
+    <div class="news-container" style="visibility: hidden">
+    <!-- <div class="news-container"> -->
+      <div><h1>News from Angola</h1><p id="close-container" style="text-decoration-line: underline">Close</p></div>
+      <table class="news-table">
+        <tr>
+          <td class="article-headline">Article Headline</td>
+          <td class="article-url"><a href="">Read more</a></td>
+        </tr>
+      </table>
+    </div>
+    <script>
+      document.addEventListener("click", (e) => {
+        if (e.target.getAttribute('id') == 'close-container') {
+          document.querySelector('.news-container').style.visibility = 'hidden'
+        }
+      })
+    </script>
     <!-- <canvas id="map-loader"></canvas> -->
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.163.0/three.module.min.js"></script> -->
     <canvas class="webgl"></canvas>

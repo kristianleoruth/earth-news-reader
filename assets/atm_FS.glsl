@@ -47,15 +47,21 @@ void main() {
   if (pdist <= referenceUnitLength * 1.25) alpha = 1.0 - dot(fragNorm, normalize(cameraPosition));
   else alpha = 1.0 - (pdist / camSpaceERadius * (1.0/scaleFactor));
 
-  alpha *= brightFactor;
-
-  vec3 baseColor = vec3(0.6706, 0.8275, 0.9137);
+  vec3 baseColor = vec3(0.45, 0.75, 0.9);
   vec3 finColor = vec3(0.8824, 0.2902, 0.0353);
   vec3 color = baseColor;
-  // camSunAngle = acos(dot(cameraPosition, sunPos)/(mag(cameraPosition) * mag(sunPos)));
+  camSunAngle = acos(dot(cameraPosition, sunPos)/(mag(cameraPosition) * mag(sunPos)));
+
+  float dimSpeed = 1.25;
+  if (camSunAngle >= PI * 0.5) {
+    float from45 = camSunAngle - PI * 0.5;
+    from45 /= (PI * (1.0 / dimSpeed));
+    alpha *= clamp((1.0 - from45), 0.6, 1.0);
+  }
 
   // if (camSunAngle >= PI * 0.75) color = lerp(baseColor, finColor, (camSunAngle - 0.75 * PI) / (0.25 * PI) + 0.2);
   // else color = baseColor;
 
+  alpha *= brightFactor;
   gl_FragColor = vec4(color, alpha);
 }
