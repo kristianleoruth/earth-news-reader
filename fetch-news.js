@@ -2,6 +2,12 @@ const express = require("express")
 const app = express()
 const port = 3000
 
+/*
+API Keys
+b39af5e4fa24453cbef5da0e995041e1
+2546a9a33a3e464ca8d5887df53c14d6
+*/
+
 app.get('/*', (req, res) => {
   const country = req.url.replace("/", "").replaceAll("%20", " ")
 
@@ -13,7 +19,7 @@ app.get('/*', (req, res) => {
   console.log(country)
   var url = 'https://newsapi.org/v2/top-headlines?' +
           `q=${country}&` +
-          'apiKey=b39af5e4fa24453cbef5da0e995041e1'
+          'apiKey=' + '2546a9a33a3e464ca8d5887df53c14d6'
   var req = new Request(url)
   fetch(req)
     .then(function(response) {

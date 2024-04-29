@@ -17,6 +17,7 @@ const EARTH_NORMAL_PATH = "./assets/earth/8k_earth_normal_map.png"
 // https://planetpixelemporium.com/earth8081.html
 const EARTH_HEIGHTMAP_PATH = "./assets/earth/earthheight.jpg"
 const EARTH_SPECMAP_PATH = "./assets/earth/earthspec.jpg"
+const EARTH_ROT_SPEED = 0.0003
 let ETEXT_RES = {"x":0,"y":0}
 const eTexture = loader.load(EARTH_TEXTURE_PATH, (tex) => {
   ETEXT_RES.x = tex.image.width
@@ -146,11 +147,11 @@ const cities = await ParseCityData()
 
 /* Clouds */
 function RotateClouds() {
-  clouds.rotateOnAxis(new THREE.Vector3(0, 1, 0), 0.00005)
+  clouds.rotateOnAxis(new THREE.Vector3(0, 1, 0), EARTH_ROT_SPEED * 1.5)
 }
 
 const clText = await loader.loadAsync("./assets/earth/fair_clouds_8k.jpg")
-const clGeo = new THREE.SphereGeometry(ERADIUS + 0.005, 32, 32)
+const clGeo = new THREE.SphereGeometry(ERADIUS + 0.008, 32, 32)
 const clMat = new THREE.MeshPhongMaterial({
   map: clText,
   alphaMap: clText,
@@ -241,6 +242,20 @@ axes.setColors(0xfcba03, 0x29b50d, 0x091bde)
 const borderData = JSON.parse(await LoadFileContents("./assets/earth/borderdat.json")).countries
 const countries = CreateCountries()
 
+function RotateEarth() {
+  earthMesh.rotateY(EARTH_ROT_SPEED)
+  for (let i = 0; i < countries.length; i++) {
+    if (countries[i].isMultiPolygon) {
+      for (let j = 0; j < countries[i].border.length; j++) {
+        countries[i].border[j].rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), EARTH_ROT_SPEED)
+      }
+    }
+    else {
+      countries[i].border.rotateOnWorldAxis(new THREE.Vector3(0,1,0), EARTH_ROT_SPEED)
+    }
+  }
+}
+
 function CheckPoint(x, y) {
   for (let i = 0; i < borderData.length; i++) {
     let n = borderData[i].name
@@ -291,6 +306,7 @@ function CreateCountries() {
     }
     else {
       const borders = []
+      const meshes = []
       for (let j = 0; j < borderData[i].borderPoints.length; j++) {
         for (let k = 0; k < borderData[i].borderPoints[j].length; k++) {
           const normPoints = borderData[i].borderPoints[j][k]
@@ -308,7 +324,7 @@ function CreateCountries() {
       _countries.push({
         name: borderData[i].name,
         isMultiPolygon: borderData[i].isMultiPolygon,
-        border: borders,
+        border: borders
       })
     }
   }
@@ -507,6 +523,7 @@ function Loop() {
   //   const pos = new THREE.Vector3(atmVerts[i], atmVerts[i+1], atmVerts[i+2])
   //   // console.log(pos, pos.normalize().dot(dirLight.position.normalize()))
   // }
+  RotateEarth()
   RotateClouds()
   UpdateMoonPosition()
 }
