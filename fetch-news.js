@@ -13,13 +13,13 @@ app.get('/*', (req, res) => {
   console.log(country)
   var url = 'https://newsapi.org/v2/top-headlines?' +
           `q=${country}&` +
-          'language=en'
-          'apiKey=b39af5e4fa24453cbef5da0e995041e1';
-  var req = new Request(url);
+          'apiKey=b39af5e4fa24453cbef5da0e995041e1'
+  var req = new Request(url)
   fetch(req)
     .then(function(response) {
       return response.json()
     }).then((js) => {
+      console.log(js)
       res.write(JSON.stringify(js))
       res.end()
     })
