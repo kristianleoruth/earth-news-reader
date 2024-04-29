@@ -17,7 +17,7 @@ const EARTH_NORMAL_PATH = "./assets/earth/8k_earth_normal_map.png"
 // https://planetpixelemporium.com/earth8081.html
 const EARTH_HEIGHTMAP_PATH = "./assets/earth/earthheight.jpg"
 const EARTH_SPECMAP_PATH = "./assets/earth/earthspec.jpg"
-const EARTH_ROT_SPEED = 0.0003
+const EARTH_ROT_SPEED = 0.00015
 let ETEXT_RES = {"x":0,"y":0}
 const eTexture = loader.load(EARTH_TEXTURE_PATH, (tex) => {
   ETEXT_RES.x = tex.image.width
@@ -27,10 +27,10 @@ const eTexture = loader.load(EARTH_TEXTURE_PATH, (tex) => {
 const ATM_RADIUS = ERADIUS * 1.2
 const ATM2_RADIUS = ERADIUS * 1.05
 
-const MOON_ORBIT_STEP = 0.0003
+const MOON_ORBIT_STEP = -0.0003
 const MOON_TEXT_PATH = "./assets/moon/moon-4k.png"
 
-const CAM_ROTATE_SPEED = -0.0025
+const CAM_ROTATE_SPEED = -0.0035
 const FOV_FACTOR_IN = 1.02
 const FOV_FACTOR_OUT = 0.98
 
@@ -82,18 +82,6 @@ starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPoint
 const stars = new THREE.Points(starGeometry, starMaterial)
 scene.add(stars)
 
-/* Sun */
-const sunGeo = new THREE.SphereGeometry(500, 16, 16)
-const sunMat = new THREE.ShaderMaterial({
-  fragmentShader: await LoadFileContents("./assets/sunFS.glsl"),
-  vertexShader: await LoadFileContents("./assets/sunVS.glsl"),
-  transparent: true,
-})
-const sun = new THREE.Mesh(sunGeo, sunMat)
-sun.position.set(dirLight.position)
-sun.position.y += 20
-scene.add(sun)
-
 
 /* Set up Earth */
 const eNormal = loader.load(EARTH_NORMAL_PATH, ReRender)
@@ -110,7 +98,7 @@ const earthMat = new THREE.MeshPhongMaterial({
   displacementScale: .005,
   specular: 0xb0b0b0,
   specularMap: eSpecularMap,
-  color: 0xffffffff,
+  // color: 0x000000,
   flatShading: false,
   // wireframe: true
 })
@@ -169,6 +157,7 @@ const atmMat = new THREE.ShaderMaterial({
   fragmentShader: atmFS,
   vertexShader: atmVS,
   uniforms: {
+    "atmColor": { value: new THREE.Vector3(0.45, 0.75, 0.9) },
     "eradius": { value: ERADIUS },
     "sunPos": {value: dirLight.position }
   },
@@ -198,6 +187,24 @@ let moonAngles = {
   theta: 3.14,
   phi: 0.2
 }
+
+/* Sun */
+const sunFS = await LoadFileContents("./assets/sunFS.glsl")
+const sunVS = await LoadFileContents("./assets/sunVS.glsl")
+const sunGeo = new THREE.SphereGeometry(10, 16, 16)
+const sunMat = new THREE.ShaderMaterial({
+  uniforms: {
+    "sunOrigin": {value: new THREE.Vector3(450,0,0)}
+  },
+  fragmentShader: sunFS,
+  vertexShader: sunVS,
+  transparent: true
+})
+const sun = new THREE.Mesh(sunGeo, sunMat)
+sun.position.set(450,0,0)
+scene.add(sun)
+
+// Moon
 
 const moonGeo = new THREE.SphereGeometry(0.2, 16, 16)
 const moonText = loader.load(MOON_TEXT_PATH, ReRender)
@@ -414,7 +421,7 @@ $(document.body).on("mouseup", () => {
   handleMouseInput = false
 })
 
-$(canvas).on("scroll mousewheel DOMMouseScroll", e => {
+$(window).on("scroll mousewheel DOMMouseScroll", e => {
   Zoom(e.originalEvent.wheelDelta)
 })
 

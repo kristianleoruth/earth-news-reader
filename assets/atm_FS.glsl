@@ -3,6 +3,7 @@ varying vec3 pos;
 varying mat4 modelViewMat;
 varying mat4 projMat;
 
+uniform vec3 atmColor;
 uniform float eradius;
 uniform vec3 sunPos;
 
@@ -47,9 +48,9 @@ void main() {
   if (pdist <= referenceUnitLength * 1.25) alpha = 1.0 - dot(fragNorm, normalize(cameraPosition));
   else alpha = 1.0 - (pdist / camSpaceERadius * (1.0/scaleFactor));
 
-  vec3 baseColor = vec3(0.45, 0.75, 0.9);
+  // vec3 baseColor = vec3(0.45, 0.75, 0.9);
   vec3 finColor = vec3(0.8824, 0.2902, 0.0353);
-  vec3 color = baseColor;
+  vec3 color = atmColor;
   camSunAngle = acos(dot(cameraPosition, sunPos)/(mag(cameraPosition) * mag(sunPos)));
 
   float dimSpeed = 1.25;
