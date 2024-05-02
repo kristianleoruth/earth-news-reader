@@ -12,7 +12,7 @@ app.get('/*', (req, res) => {
   const country = req.url.replace("/", "").replaceAll("%20", " ")
 
   // Set cors headers
-  res.setHeader("Access-Control-Allow-Origin", 'http://localhost:5174')
+  res.setHeader("Access-Control-Allow-Origin", 'http://localhost:5173')
   res.setHeader('Access-Control-Allow-Methods', 'GET')
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type')
 
