@@ -24,7 +24,7 @@ const eTexture = loader.load(EARTH_TEXTURE_PATH, (tex) => {
   ETEXT_RES.y = tex.image.height
 })
 
-const ATM_RADIUS = ERADIUS * 1.2
+const ATM_RADIUS = ERADIUS * 1.4
 const ATM2_RADIUS = ERADIUS * 1.05
 
 const MOON_ORBIT_STEP = -0.0003

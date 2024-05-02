@@ -66,8 +66,8 @@ float bscale(float x) {
 }
 
 float dtpa2(vec3 rayOrigin, vec3 rayDir) {
-  float IN_ATM_FACTOR = 0.8;
-  float OUT_ATM_FACTOR = 1.0;
+  float IN_ATM_FACTOR = 1.0;
+  float OUT_ATM_FACTOR = 0.8;
   float BRIGHT_SCALE = 1.5;
   vec2 atmInt = raySphere(epos, atmradius, rayOrigin, rayDir);
   vec3 closestPoint = rayOrigin + rayDir * (atmInt.x + (atmInt.y - atmInt.x) * 0.5);
@@ -77,8 +77,8 @@ float dtpa2(vec3 rayOrigin, vec3 rayDir) {
   float dpr = dot(fragNorm, normalize(cameraPosition - pos));
   float lightDpr = brightnessScale((dot(fragNorm, normalize(sunPos - pos)) + 1.0) * BRIGHT_SCALE);
   
-  if (dFromOrig <= 3.168) {
-    return bscale(dFromOrig / (atmradius * 2.0)) * lightDpr * IN_ATM_FACTOR;
+  if (dFromOrig <= 2.965) {
+    return bscale(dFromOrig / (atmradius * 1.65)) * lightDpr * IN_ATM_FACTOR;
   }
 
   return lightDpr * dpr * OUT_ATM_FACTOR;
@@ -111,7 +111,7 @@ float dtpa(vec3 rayOrigin, vec3 rayDir) {
 void main() {
   float alpha;
 
-  vec4 baseColor = vec4(0.5412, 0.8157, 0.949, 1.0);
+  vec4 baseColor = vec4(0.42, 0.71, 1.0, 1.0);
   vec4 finalColor = vec4(0.95, 0.51, 0.25, 1.0);
   vec4 color = baseColor;
 
