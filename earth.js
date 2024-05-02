@@ -150,16 +150,17 @@ clouds.position.set(0,0,0)
 scene.add(clouds)
 
 /* Atmosphere */
-const atmFS = await LoadFileContents("./assets/atm_FS.glsl")
-const atmVS = await LoadFileContents("./assets/atm_VS.glsl")
+const atmFS = await LoadFileContents("./assets/adv_atm_fs.glsl")
+const atmVS = await LoadFileContents("./assets/adv_atm_vs.glsl")
 const atmGeo = new THREE.SphereGeometry(ATM_RADIUS, 32, 32)
 const atmMat = new THREE.ShaderMaterial({
   fragmentShader: atmFS,
   vertexShader: atmVS,
   uniforms: {
-    "atmColor": { value: new THREE.Vector3(0.45, 0.75, 0.9) },
+    "atmradius": {value: ATM_RADIUS},
     "eradius": { value: ERADIUS },
-    "sunPos": {value: dirLight.position }
+    "sunPos": {value: dirLight.position },
+    "epos": {value: new THREE.Vector3(0) }
   },
   transparent: true
 })
@@ -179,7 +180,7 @@ const atm2Mat = new THREE.ShaderMaterial({
 })
 const atm2 = new THREE.Mesh(atm2Geo, atm2Mat)
 atm2.position.set(0,0,0)
-scene.add(atm2)
+// scene.add(atm2)
 
 /* Moon */
 let moonDistance = 5
@@ -194,14 +195,14 @@ const sunVS = await LoadFileContents("./assets/sunVS.glsl")
 const sunGeo = new THREE.SphereGeometry(10, 16, 16)
 const sunMat = new THREE.ShaderMaterial({
   uniforms: {
-    "sunOrigin": {value: new THREE.Vector3(450,0,0)}
+    "sunOrigin": {value: new THREE.Vector3(650,0,0)}
   },
   fragmentShader: sunFS,
   vertexShader: sunVS,
   transparent: true
 })
 const sun = new THREE.Mesh(sunGeo, sunMat)
-sun.position.set(450,0,0)
+sun.position.set(650,0,0)
 scene.add(sun)
 
 // Moon
@@ -371,7 +372,7 @@ function HandleMouseClick(event) {
 const newsContainer = $('.news-container')
 
 function ShowNews(countryName, newsAPIData) {
-  newsContainer.attr("style", "visibility: visible")
+  newsContainer.attr("style", "display: block")
   newsContainer.find("h1").text(`News from ${countryName}`)
 
   const table = document.querySelector('table.news-table')
@@ -410,7 +411,7 @@ $(document.body).on("mousemove", e => {
   HandleView(e)
 })
 
-window.onclick = HandleMouseClick;
+document.querySelector('canvas.webgl').onclick = HandleMouseClick;
 
 $(document.body).on("mousedown", () => {
   handleMouseInput = true
