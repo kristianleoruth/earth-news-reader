@@ -111,7 +111,7 @@ float dtpa(vec3 rayOrigin, vec3 rayDir) {
 void main() {
   float alpha;
 
-  vec4 baseColor = vec4(0.42, 0.71, 1.0, 1.0);
+  vec4 baseColor = vec4(0.6, 0.8, 1.0, 1.0);
   vec4 finalColor = vec4(0.95, 0.51, 0.25, 1.0);
   vec4 color = baseColor;
 
